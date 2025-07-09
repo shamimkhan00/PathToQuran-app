@@ -1,0 +1,33 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/EngMeri.ttf",
+      "sha1": "44048d5025efc45b5ad241a6a0cee7426b2fa4a9"
+    },
+    {
+      "path": "assets/fonts/font.ttf",
+      "sha1": "9003e8b34f81013c7a7fce35ffc07b864242a5df"
+    },
+    {
+      "path": "assets/fonts/fontUthmani.ttf",
+      "sha1": "b7f621480cd715885719fdbc5a16521447f4c7f3"
+    },
+    {
+      "path": "assets/fonts/indo.ttf",
+      "sha1": "ab53a8b4bd3735be3b9625fed87bc8c0aee9a031"
+    },
+    {
+      "path": "assets/fonts/indopak3.ttf",
+      "sha1": "4a0c0ebc411279dcf81a2b615679f74b81c85e05"
+    },
+    {
+      "path": "assets/fonts/indopak4.ttf",
+      "sha1": "ab53a8b4bd3735be3b9625fed87bc8c0aee9a031"
+    },
+    {
+      "path": "assets/fonts/meriEtalic.ttf",
+      "sha1": "1bd5a98d21aaa6832a7af79c7d54b8cbb3a20204"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "pathtoquranapp",
+  "displayName": "pathtoquranapp",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-6964983812446877~7978139272",
+    "ios_app_id": "ca-app-pub-xxxxxxxx~xxxxxxxx"
+  }
+}
