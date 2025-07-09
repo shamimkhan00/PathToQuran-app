@@ -94,7 +94,7 @@ export default function SurahDetail({
 
       return () => clearInterval(interval);
     }
-  }, [targetIndex]);
+  }, [targetIndex,showTrans]);
 
 
   const saveLastRead = async (surahNumber: number, ayahNumber: number) => {
