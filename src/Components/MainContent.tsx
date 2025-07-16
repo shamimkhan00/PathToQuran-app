@@ -52,11 +52,14 @@ export default function MainContent({ onSurahPress }: Props) {
 
   return (
     <View style={styles.body}>
-      <Text style={styles.sectionTitle}>SURAH</Text>
+      <Text style={styles.sectionTitle}>Quran - Clear Quran/Sahih Intl. </Text>
       <FlatList
         data={surahList}
         keyExtractor={(_, index) => index.toString()}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
         ListHeaderComponent={
           lastRead ? (
             <TouchableOpacity

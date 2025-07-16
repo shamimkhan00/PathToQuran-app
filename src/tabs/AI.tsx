@@ -1,6 +1,4 @@
-import { useQuran } from '../Components/Context';
-import React, { useState } from 'react';
-import { GROQ_API_KEY } from '@env';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -12,45 +10,40 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuran } from '../Components/Context';
+import mobileAds from 'react-native-google-mobile-ads';
+import { GROQ_API_KEY } from '@env';
 import NativeAdCard from '../Components/NativeAdCard.tsx';
-
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const tafsirJson = require('../../assets/Quran/tasfirEN.json');
 const sahih = require('../../assets/Quran/sahih.json');
 const clearQuran = require('../../assets/Quran/English.json');
 
-
-import { useEffect } from 'react';
-import mobileAds from 'react-native-google-mobile-ads';
-
-
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const AiVerseExplainer = () => {
-  useEffect(() => {
-    mobileAds()
-      .initialize()
-      .then(() => {
-        console.log('✅ AdMob SDK initialized');
-      });
-  }, []);
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
-  const { translationSource, setTranslationSource } = useQuran();
+  const { translationSource } = useQuran();
+
+  useEffect(() => {
+    mobileAds().initialize().then(() => {
+      console.log('✅ AdMob SDK initialized');
+    });
+  }, []);
+
   const getTafsirForRange = (input: string): string => {
     const [surah, ayahRange] = input.split(':');
     if (!surah || !ayahRange) return '';
 
     const [start, end] = ayahRange.split('-').map(Number);
-    const tafsirEntries = tafsirJson; // or from state if pre-parsed
-
     const collected: string[] = [];
 
-    Object.keys(tafsirEntries).forEach(key => {
+    Object.keys(tafsirJson).forEach(key => {
       const [s, a] = key.split(':');
       const ayahNum = parseInt(a, 10);
       if (s === surah && (!end ? ayahNum === start : ayahNum >= start && ayahNum <= end)) {
-        const text = tafsirEntries[key]?.text || tafsirEntries[key];
+        const text = tafsirJson[key]?.text || tafsirJson[key];
         collected.push(`**${key}**:\n${text.replace(/<[^>]*>/g, '')}`);
       }
     });
@@ -63,7 +56,6 @@ const AiVerseExplainer = () => {
     if (!surah || !ayahRange) return '';
 
     const verses = translationSource === 'clear-quran' ? clearQuran : sahih;
-
     const [start, end] = ayahRange.split('-').map(Number);
     const collected: string[] = [];
 
@@ -75,8 +67,6 @@ const AiVerseExplainer = () => {
     return collected.join('\n\n');
   };
 
-
-
   const getSystemPrompt = () => {
     const translationName =
       translationSource === 'clear-quran'
@@ -84,73 +74,55 @@ const AiVerseExplainer = () => {
         : 'Sahih International';
 
     return `
-    You are an Islamic AI assistant for a Quran explanation app called PathToQuran.
+You are an Islamic AI assistant for a Quran explanation app called PathToQuran.
 
 Your job is to explain Quranic verses to users in three structured sections:
 
----
+1. **Context and Explanation**
+   - Provide historical/spiritual context
+   - Mention themes (ethics, law, prophets)
+   - Be concise and authentic
 
-1. **Context and Explanation**  
-   - Briefly describe the historical, social, or spiritual context.  
-   - Mention if the content involves ethics, law, guidance, or stories of prophets.  
-   - Be concise and rooted in established understanding.
+2. **Meaning in Simple Terms**
+   - Summarize the message clearly
+   - Mention the addressee (e.g., believers, disbelievers)
+   - Keep language simple and neutral
 
-2. **Meaning in Simple Terms**  
-   - Summarize the overall message in clear, modern English.  
-   - Identify who is being addressed (e.g., believers, disbelievers, Prophet).  
-   - Keep it accessible for readers of all backgrounds.
+3. **Verse-by-Verse Breakdown**
+   - Bullet points with verse numbers (e.g., 2:2)
+   - Base explanations on English translation
+   - Refer to tafsir for background (don’t copy it)
 
-3. **Verse-by-Verse Breakdown**  
-   - Use bullet points with verse numbers (e.g., 2:2, 2:3).  
-   - Explain each verse based primarily on the official English translation.  
-   - You may quote from the translation to support clarity (e.g., “This is the Book in which there is no doubt…” – 2:2).  
-   - Use the Tafsir provided as a reference to ensure accuracy and avoid misinterpretation — not as the sole basis.
-
----
-
-**IMPORTANT GUIDELINES**  
-- Always refer to the official English translation: **"${translationName}"**.  
-- Do not paraphrase the Quran directly — explain based on its meaning.  
-- Use the Tafsir reference to guide and check your explanation.  
-- If unsure about any verse, say: “I do not have enough knowledge to explain this.”  
-- Avoid Arabic and transliteration.  
-- Be accurate, neutral, respectful, and educational.
-
-Return your response using clear section headings and spacing.`;
-
+IMPORTANT:
+- Use **"${translationName}"** as the main translation.
+- Do not paraphrase the Quran directly.
+- Avoid Arabic/transliteration.
+- Be respectful, accurate, and clear.
+`;
   };
-
 
   const fetchExplanation = async () => {
     Keyboard.dismiss();
     if (!inputText.trim()) return;
+
     setLoading(true);
     setResult('');
 
-    // 🔍 Get tafsir text from local JSON
-    const tafsirReference = getTafsirForRange(inputText);
-    const verseText = getVerseTextForRange(inputText); // 👈 you missed this earlier
+    const tafsir = getTafsirForRange(inputText);
+    const verses = getVerseTextForRange(inputText);
 
-    // 👤 Construct user prompt with tafsir included
     const userPrompt = `
 Surah & Ayah(s): ${inputText}
 
-Please explain the following Quranic verse(s) using the official English translation provided below.  
-Use the Tafsir only for context or verification — not as your main source.
-
----
+Please explain the following Quranic verse(s):
 
 **Verse Text (${translationSource === 'clear-quran' ? 'The Clear Quran' : 'Sahih International'})**
-${verseText || 'No verse text found.'}
-
----
+${verses || 'No verse text found.'}
 
 **Tafsir Reference (Maulana Wahiduddin Khan):**
-${tafsirReference || 'No tafsir found for this range.'}
+${tafsir || 'No tafsir found for this range.'}
 
----
-
-⚠️ Do not guess or paraphrase. Stick strictly to the provided verse text. Follow the explanation format described in the system message.
+⚠️ Do not guess or paraphrase. Stick to the provided verse. Use structured explanation format.
 `;
 
     try {
@@ -163,14 +135,8 @@ ${tafsirReference || 'No tafsir found for this range.'}
         body: JSON.stringify({
           model: 'llama3-8b-8192',
           messages: [
-            {
-              role: 'system',
-              content: getSystemPrompt(),
-            },
-            {
-              role: 'user',
-              content: userPrompt,
-            },
+            { role: 'system', content: getSystemPrompt() },
+            { role: 'user', content: userPrompt },
           ],
           temperature: 0.5,
         }),
@@ -181,27 +147,41 @@ ${tafsirReference || 'No tafsir found for this range.'}
       if (!response.ok) {
         console.error('Groq API Error:', data);
 
-        if (response.status === 429) {
-          Alert.alert(
-            'Limit Reached',
-            'The AI explanation service is temporarily unavailable due to high usage. Please try again later.'
-          );
-          setResult('⚠️ API limit exceeded. Try again later.');
-        } else {
-          setResult(data.error?.message || 'An unknown error occurred.');
-        }
+        const errorMsg =
+          response.status === 429
+            ? '⚠️ API limit exceeded. Try again later.'
+            : data.error?.message || 'An unknown error occurred.';
+        Alert.alert('Error', errorMsg);
+        setResult(errorMsg);
         return;
       }
 
-      const message = data.choices?.[0]?.message?.content;
-      setResult(message || 'No response.');
-
-    } catch (error) {
-      if(error instanceof Error && error.message==='Network request failed')
-      setResult('⚠️ No internet connection. Please check your network and try again.');
+      setResult(data.choices?.[0]?.message?.content || 'No response.');
+    } catch (error: any) {
+      if (error.message === 'Network request failed') {
+        setResult('⚠️ No internet connection. Please try again.');
+      } else {
+        console.error(error);
+        setResult('⚠️ Unexpected error. Try again later.');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderExplanation = () => {
+    return result.split(/\n(?=\*\*)/).map((section, idx) => {
+      const headerMatch = section.match(/^\*\*(.+?)\*\*/);
+      const header = headerMatch?.[1]?.trim() || '';
+      const body = section.replace(/^\*\*.+?\*\*/, '').trim();
+
+      return (
+        <View key={idx} style={{ marginTop: idx === 0 ? 0 : 12 }}>
+          {header && <Text style={styles.resultHeader}>{header}</Text>}
+          {body && <Text style={styles.resultText}>{body}</Text>}
+        </View>
+      );
+    });
   };
 
   return (
@@ -221,35 +201,12 @@ ${tafsirReference || 'No tafsir found for this range.'}
           placeholderTextColor="#7da197"
         />
 
-        <Button
-          title="Get Explanation"
-          onPress={fetchExplanation}
-          disabled={loading}
-        />
+        <Button title="Get Explanation" onPress={fetchExplanation} disabled={loading} />
 
-        {!loading && result && (
-          <View style={styles.resultContainer}>
-            {result.split(/\n(?=\*\*)/).map((section, idx) => {
-              const headerMatch = section.match(/^\*\*(.+?)\*\*/);
-              const header = headerMatch ? headerMatch[1].trim() : null;
-              const body = headerMatch
-                ? section.replace(headerMatch[0], '').trim()
-                : section.trim();
-
-              return (
-                <View key={idx} style={{ marginTop: idx === 0 ? 0 : 12 }}>
-                  {header && <Text style={styles.resultHeader}>{header}</Text>}
-                  {body.length > 0 && <Text style={styles.resultText}>{body}</Text>}
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {!loading && result && <View style={styles.resultContainer}>{renderExplanation()}</View>}
         <View style={styles.AdComp}>
           <NativeAdCard></NativeAdCard>
         </View>
-
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -282,23 +239,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#05291d',
   },
-  result: {
-    marginTop: 20,
-    fontSize: 16,
-    color: 'white',
-    lineHeight: 24,
-  },
   resultContainer: {
     marginTop: 20,
   },
-
   resultHeader: {
     fontSize: 17,
     fontWeight: 'bold',
     color: '#7dd6b6',
     marginBottom: 4,
   },
-
   resultText: {
     fontSize: 16,
     color: 'white',
@@ -311,4 +260,3 @@ const styles = StyleSheet.create({
 });
 
 export default AiVerseExplainer;
-// e0f2e9

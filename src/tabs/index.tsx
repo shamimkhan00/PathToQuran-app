@@ -82,21 +82,21 @@ const HomeScreen = () => {
           <MainContent onSurahPress={setSelectedSurah} />
         )}
       </View>
-      <View style={styles.bannerContainer}>
-        {isConnected && (
+      {isConnected && (
+        <View style={styles.bannerContainer}>
           <BannerAd
             key={adReloadKey}
-            unitId={TestIds.BANNER}
+            unitId={TestIds.BANNER} // Replace with real unit ID in production
             size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
             requestOptions={{
               requestNonPersonalizedAdsOnly: true,
             }}
             onAdFailedToLoad={(error) => {
-              console.log('Ad failed to load:', error);
+              console.warn('Ad failed to load:', error);
             }}
           />
-        )}
-      </View>
+        </View>
+      )}
 
     </SafeAreaView>
 

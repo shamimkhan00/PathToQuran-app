@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -34,6 +34,22 @@ interface Props {
   showTrans: boolean;
   script: string;
 }
+
+type VerseItemProps = {
+  item: string;
+  surahNumber: number;
+  arabicVerses: { [key: string]: string };
+  indopakVerses: { [key: string]: string };
+  englishVerses: { [key: string]: string };
+  engSahihVerses: { [key: string]: string };
+  engTransVerses: { [key: string]: string };
+  script: string;
+  translationSource: string;
+  showTrans: boolean;
+  arabicFont: number;
+  engFontSize: number;
+  styles: any;
+};
 
 export default function SurahDetail({
   surahNumber,
@@ -94,7 +110,7 @@ export default function SurahDetail({
 
       return () => clearInterval(interval);
     }
-  }, [targetIndex,showTrans]);
+  }, [targetIndex, showTrans]);
 
 
   const saveLastRead = async (surahNumber: number, ayahNumber: number) => {
@@ -112,7 +128,7 @@ export default function SurahDetail({
           'lastRead',
           JSON.stringify({ surah: surahNumber, ayah: ayahNumber })
         );
-        console.log('Saved:', surahNumber, ayahNumber);
+
       } catch (err) {
         console.warn('Error saving last read:', err);
       }
@@ -144,6 +160,45 @@ export default function SurahDetail({
     viewAreaCoveragePercentThreshold: 50,
   });
 
+  const VerseItem = React.memo(({
+    item,
+    surahNumber,
+    arabicVerses,
+    indopakVerses,
+    englishVerses,
+    engSahihVerses,
+    engTransVerses,
+    script,
+    translationSource,
+    showTrans,
+    arabicFont,
+    engFontSize,
+    styles
+  }: VerseItemProps) => {
+    return (
+      <View>
+        <View style={styles.VerseHead}>
+          <Text style={styles.surahNumber}>{surahNumber}:{item}</Text>
+        </View>
+        <View style={styles.verseBox}>
+          {script === 'uthmani' ? (
+            <Text style={[styles.arabic, { fontSize: arabicFont }]}>{arabicVerses[item]}</Text>
+          ) : script === 'indopak' ? (
+            <Text style={[styles.indopak, { fontSize: arabicFont + 1 }]}>{indopakVerses[item]}</Text>
+          ) : null}
+
+          {translationSource === 'clear-quran' ? (
+            <Text style={[styles.english, { fontSize: engFontSize, lineHeight: engFontSize * 1.4 }]}>{englishVerses[item]}</Text>
+          ) : (
+            <Text style={[styles.english, { fontSize: engFontSize, lineHeight: engFontSize * 1.4 }]}>{engSahihVerses[item]}</Text>
+          )}
+
+          {showTrans && <Text style={[styles.englishTrans, { fontSize: engFontSize - 1 }]}>{engTransVerses[item]}</Text>}
+        </View>
+      </View>
+    );
+  });
+
 
 
   return (
@@ -162,31 +217,27 @@ export default function SurahDetail({
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfigRef.current}
         renderItem={({ item }) => (
-          <View>
-            <View style={styles.VerseHead}>
-              <Text style={styles.surahNumber}>{surahNumber}:{item}</Text>
-            </View>
-            <View style={styles.verseBox}>
-              {script === 'uthmani' ? (
-                <Text style={[styles.arabic, { fontSize: arabicFont }]}>{arabicVerses[item]}</Text>
-              ) : script === 'indopak' ? (
-                <Text style={[styles.indopak, { fontSize: arabicFont + 1 }]} >{indopakVerses[item]}</Text>
-              ) : null}
-
-              {translationSource === 'clear-quran' ? (
-                <Text style={[styles.english, { fontSize: engFontSize, lineHeight: engFontSize * 1.4 }]}>{englishVerses[item]}</Text>
-              ) : (
-                <Text style={[styles.english, { fontSize: engFontSize, lineHeight: engFontSize * 1.4 }]}>{engSahihVerses[item]}</Text>
-              )}
-
-              {showTrans && <Text style={[styles.englishTrans, { fontSize: engFontSize - 1 }]}>{engTransVerses[item]}</Text>}
-            </View>
-          </View>
+          <VerseItem
+            item={item}
+            surahNumber={surahNumber}
+            arabicVerses={arabicVerses}
+            indopakVerses={indopakVerses}
+            englishVerses={englishVerses}
+            engSahihVerses={engSahihVerses}
+            engTransVerses={engTransVerses}
+            script={script}
+            translationSource={translationSource}
+            showTrans={showTrans}
+            arabicFont={arabicFont}
+            engFontSize={engFontSize}
+            styles={styles}
+          />
         )}
-
+        
+        removeClippedSubviews={true}
         ListFooterComponent={() => (
           <View style={styles.AdComp}>
-            <NativeAdCard></NativeAdCard>
+            <NativeAdCard />
           </View>
         )}
       />

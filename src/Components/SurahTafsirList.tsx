@@ -3,7 +3,6 @@ import {
     ActivityIndicator,
     BackHandler,
     FlatList,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -29,9 +28,7 @@ const QuranTafsir: React.FC = () => {
     const [tafsirBySurah, setTafsirBySurah] = useState<{ [surahNum: string]: TafsirEntry[] }>({});
     const [selectedSurah, setSelectedSurah] = useState<SurahItem | null>(null);
     const [loading, setLoading] = useState(true);
-    const {
-        engFontSize,
-    } = useQuran();
+    const { engFontSize } = useQuran();
 
     useEffect(() => {
         mobileAds()
@@ -54,7 +51,7 @@ const QuranTafsir: React.FC = () => {
                 const rawTafsir = require('../../assets/Quran/tasfirEN.json');
                 const surahMap: { [surahNum: string]: TafsirEntry[] } = {};
 
-                const resolveText = (key: string): { ayahs: string[]; text: string } | null => {
+                const resolveText = (key: string): TafsirEntry | null => {
                     const value = rawTafsir[key];
                     if (!value) return null;
 
@@ -64,7 +61,7 @@ const QuranTafsir: React.FC = () => {
 
                     return {
                         ayahs: value.ayah_keys ?? [key],
-                        text: value.text,
+                        text: value.text.replace(/<[^>]*>?/gm, ''), // 🔁 preprocess HTML cleanup here
                     };
                 };
 
@@ -77,7 +74,6 @@ const QuranTafsir: React.FC = () => {
                         surahMap[surahNum] = [];
                     }
 
-                    // Avoid duplicates
                     const alreadyExists = surahMap[surahNum].some((e) => e.text === tafsirEntry.text);
                     if (!alreadyExists) {
                         surahMap[surahNum].push(tafsirEntry);
@@ -101,10 +97,10 @@ const QuranTafsir: React.FC = () => {
         useCallback(() => {
             const onBackPress = () => {
                 if (selectedSurah) {
-                    setSelectedSurah(null); // Go back to surah list
-                    return true; // ✅ Stop native back behavior
+                    setSelectedSurah(null);
+                    return true;
                 }
-                return false; // Let default navigation handle it (e.g., exit app or go to another tab)
+                return false;
             };
 
             const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -131,9 +127,7 @@ const QuranTafsir: React.FC = () => {
     if (!selectedSurah) {
         return (
             <View style={styles.body}>
-                <Text style={styles.sectionTitle}>Tasfir-Tazkirul Quran
-
-                </Text>
+                <Text style={styles.sectionTitle}>Tasfir-Tazkirul Quran</Text>
                 <FlatList
                     data={surahs}
                     renderItem={({ item }) => (
@@ -160,38 +154,43 @@ const QuranTafsir: React.FC = () => {
                     <Text style={styles.backButtonText}>← Back to Surahs</Text>
                 </TouchableOpacity>
             </View>
+
             <FlatList
                 data={currentTafsirs}
                 keyExtractor={(_, index) => index.toString()}
                 showsVerticalScrollIndicator={false}
+                initialNumToRender={5}
+                maxToRenderPerBatch={5}
+                windowSize={7}
+                removeClippedSubviews={true}
                 ListHeaderComponent={
                     <View style={styles.header}>
                         <Text style={styles.surahTitle}>{selectedSurah.name}</Text>
                         <Text style={styles.surahSubtitle}>Surah {selectedSurah.index}</Text>
                     </View>
                 }
-                ListEmptyComponent={
-                    <Text style={styles.tafsirText}>No Tafsir available.</Text>
-                }
+                ListEmptyComponent={<Text style={styles.tafsirText}>No Tafsir available.</Text>}
                 renderItem={({ item }) => (
-                    <View style={styles.tafsirContainer}> 
+                    <View style={styles.tafsirContainer}>
                         <Text style={styles.tafsirTitle}>Ayahs: {item.ayahs.join(', ')}</Text>
-                        <Text style={[styles.tafsirText, { fontSize: engFontSize, lineHeight: engFontSize * 1.4  }]}>
-                            {item.text.replace(/<[^>]*>?/gm, '')}
+                        <Text style={[styles.tafsirText, { fontSize: engFontSize, lineHeight: engFontSize * 1.4 }]}>
+                            {item.text}
                         </Text>
                     </View>
                 )}
                 contentContainerStyle={styles.scrollContainer}
-                ListFooterComponent={() => (
-                    <View style={styles.AdComp}>
-                        <NativeAdCard></NativeAdCard>
-                    </View>
-                )}
             />
+
+            {/* 👇 Ad is moved outside FlatList for GPU stability */}
+            {/* <View style={styles.AdComp}>
+                <NativeAdCard />
+            </View> */}
         </View>
     );
-
 };
+
+
+
 
 export default QuranTafsir;
 

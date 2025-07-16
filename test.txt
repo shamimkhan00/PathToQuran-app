@@ -1,0 +1,97 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Text, Button, Alert } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import Sound from 'react-native-sound';
+import Header from '../Components/Header';
+
+Sound.setCategory('Playback');
+
+const Recitation = () => {
+    const soundRef = useRef<Sound | null>(null);
+    const [isConnected, setIsConnected] = useState<boolean>(false);
+    const [adReloadKey, setAdReloadKey] = useState<number>(0);
+
+    useEffect(() => {
+        // Load sound on mount
+        const sound = new Sound(
+            'https://the-quran-project.github.io/Quran-Audio/Data/1/1_1.mp3',
+            undefined,
+            (error) => {
+                if (error) {
+                    console.log('Sound loading error', error);
+                }
+            }
+        );
+
+
+        soundRef.current = sound;
+
+        return () => {
+            sound.release();
+        };
+    }, []);
+
+    const playSound = () => {
+        soundRef.current?.play((success) => {
+            if (!success) Alert.alert('Playback Failed');
+        });
+    };
+
+    const pauseSound = () => {
+        soundRef.current?.pause();
+    };
+
+    const stopSound = () => {
+        soundRef.current?.stop();
+    };
+
+    useEffect(() => {
+        // Initial check
+        const checkConnection = async () => {
+            const state = await NetInfo.fetch();
+            setIsConnected(state.isConnected ?? false);
+        };
+        checkConnection();
+
+        // Subscribe to network status changes
+        const unsubscribe = NetInfo.addEventListener((state) => {
+            if (state.isConnected && !isConnected) {
+                setAdReloadKey((prev) => prev + 1); // reload ad
+            }
+            setIsConnected(state.isConnected ?? false);
+        });
+
+        return () => unsubscribe();
+    }, [isConnected]);
+
+    return (
+        <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+            <Header />
+            <View style={styles.playBox}>
+                <Button title="Play" onPress={playSound} />
+                <Button title="Pause" onPress={pauseSound} />
+                <Button title="Stop" onPress={stopSound} />
+            </View>
+        </SafeAreaView>
+    );
+};
+
+export default Recitation;
+
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#09130f',
+    },
+    playBox: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    bannerContainer: {
+        alignItems: 'center',
+    },
+
+});
