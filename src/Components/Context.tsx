@@ -53,6 +53,8 @@ type QuranContextType = {
   targetSurah: number;
   setTargetSurah: (s: number) => void;
   clearAllData?: () => Promise<void>; // optional debug method
+  showAds: boolean;
+  setShowAds: (b: boolean) => void;
 };
 
 const QuranContext = createContext<QuranContextType | undefined>(undefined);
@@ -72,6 +74,7 @@ export const QuranProvider = ({ children }: { children: ReactNode }) => {
   const [translationSource, setTranslationSource] = useState<'clear-quran' | 'sahih-international'>('sahih-international');
   const [targetIndex, setTargetIndex] = useState(1);
   const [targetSurah, setTargetSurah] = useState(0);
+  const [showAds, setShowAds] = useState(true);
 
   useEffect(() => {
     const loadAllData = async () => {
@@ -167,6 +170,8 @@ export const QuranProvider = ({ children }: { children: ReactNode }) => {
         targetSurah,
         setTargetSurah,
         clearAllData,
+        showAds,
+        setShowAds,
       }}
     >
       {children}

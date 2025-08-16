@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useQuran } from './Context';
 import mobileAds from 'react-native-google-mobile-ads';
-import NativeAdCard from '../Components/NativeAdCard.tsx';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 interface SurahItem {
@@ -181,10 +180,6 @@ const QuranTafsir: React.FC = () => {
                 contentContainerStyle={styles.scrollContainer}
             />
 
-            {/* 👇 Ad is moved outside FlatList for GPU stability */}
-            {/* <View style={styles.AdComp}>
-                <NativeAdCard />
-            </View> */}
         </View>
     );
 };

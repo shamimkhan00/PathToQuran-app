@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  BackHandler,
   Button,
   Keyboard,
   ScrollView,
@@ -13,7 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuran } from '../Components/Context';
 import mobileAds from 'react-native-google-mobile-ads';
 import { GROQ_API_KEY } from '@env';
-import NativeAdCard from '../Components/NativeAdCard.tsx';
+import { useNavigation } from '@react-navigation/native';
+import {
+  BannerAd,
+  BannerAdSize,
+  TestIds,
+} from 'react-native-google-mobile-ads';
 const tafsirJson = require('../../assets/Quran/tasfirEN.json');
 const sahih = require('../../assets/Quran/sahih.json');
 const clearQuran = require('../../assets/Quran/English.json');
@@ -25,6 +31,22 @@ const AiVerseExplainer = () => {
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const { translationSource } = useQuran();
+  const [adReloadKey, setAdReloadKey] = useState<number>(0);
+  
+  // const navigation = useNavigation();
+  // useEffect(() => {
+  //   const backAction = () => {
+  //     navigation.goBack(); // Go back to Header
+  //     return true; // prevent default behavior (like closing app)
+  //   };
+
+  //   const backHandler = BackHandler.addEventListener(
+  //     'hardwareBackPress',
+  //     backAction
+  //   );
+
+  //   return () => backHandler.remove();
+  // }, []);
 
   useEffect(() => {
     mobileAds().initialize().then(() => {
@@ -204,10 +226,21 @@ ${tafsir || 'No tafsir found for this range.'}
         <Button title="Get Explanation" onPress={fetchExplanation} disabled={loading} />
 
         {!loading && result && <View style={styles.resultContainer}>{renderExplanation()}</View>}
-        <View style={styles.AdComp}>
-          <NativeAdCard></NativeAdCard>
-        </View>
+        
       </ScrollView>
+      <View style={styles.bannerContainer}>
+                <BannerAd
+                  key={adReloadKey}
+                  unitId="ca-app-pub-6964983812446877/3327150655" // Replace with real unit ID in production
+                  size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                  requestOptions={{
+                    requestNonPersonalizedAdsOnly: true,
+                  }}
+                  onAdFailedToLoad={(error) => {
+                    console.warn('Ad failed to load:', error);
+                  }}
+                />
+              </View>
     </SafeAreaView>
   );
 };
@@ -256,7 +289,10 @@ const styles = StyleSheet.create({
   AdComp: {
     flexDirection: 'column',
     marginTop: 80,
-  }
+  },
+  bannerContainer: {
+    alignItems: 'center',
+  },
 });
 
 export default AiVerseExplainer;

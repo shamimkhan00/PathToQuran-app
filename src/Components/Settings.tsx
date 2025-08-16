@@ -1,9 +1,15 @@
 import Entypo from 'react-native-vector-icons/Entypo';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, TouchableOpacity, View, Button, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuran } from './Context';
 import { Linking } from 'react-native';
+import { BackHandler } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
+
+const version = DeviceInfo.getVersion(); // e.g., "1.0.3"
+const buildNumber = DeviceInfo.getBuildNumber();
+
 type SettingsProps = {
     closeSettings: () => void;
     showTrans: boolean;
@@ -25,9 +31,30 @@ const Settings = ({ closeSettings }: SettingsProps) => {
         setScript,
         setArabicFont,
         setTranslationSource,
-        clearAllData
+        clearAllData,
+        isSettingsVisible,
     } = useQuran();
     const [pressed, setPressed] = useState(false);
+
+
+
+    useEffect(() => {
+        if (!isSettingsVisible) return;
+
+        const backAction = () => {
+            closeSettings(); // Hide settings
+            return true; // Prevent default behavior
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [isSettingsVisible]);
+
+
     return (
         <View style={styles.container}>
             <View style={[styles.TopBar, { paddingTop: 10 + insets.top }]}>
@@ -39,12 +66,9 @@ const Settings = ({ closeSettings }: SettingsProps) => {
                     onPress={closeSettings}
                 />
             </View>
-
+            <View><Text style={{ color: '#777777ff' }}>Code : {buildNumber} Version : {version}</Text></View>
             <View style={styles.content}>
-                {/* Toggle Translation */}
 
-
-                {/* Toggle Script (Uthmani | IndoPak) */}
                 <View style={[styles.card]}>
                     <Text style={styles.label}>Script</Text>
                     <View style={styles.toggleGroup}>
@@ -187,6 +211,30 @@ const Settings = ({ closeSettings }: SettingsProps) => {
                         >
                             <Text style={styles.fontButtonText}>+</Text>
                         </TouchableOpacity>
+                    </View>
+                </View>
+                <View style={{ flexDirection: 'column-reverse', marginTop: 25, }}>
+                    <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-around', marginBottom: 20, }}>
+                        <View>
+                            <Pressable
+                                onPress={() => {
+                                    Linking.openURL('https://www.path-to-quran.com/aboutus');
+                                }}
+                            // style={styles.Feedbutton}
+                            >
+                                <Text style={{ color: 'pink', borderWidth: 1, padding: 10, borderRadius: 10, borderColor: 'orange' }}>About us</Text>
+                            </Pressable>
+                        </View>
+                        <View>
+                            <Pressable
+                                onPress={() => {
+                                    Linking.openURL('https://www.path-to-quran.com/');
+                                }}
+                            // style={styles.Feedbutton}
+                            >
+                                <Text style={{ color: 'pink', borderWidth: 1, padding: 10, borderRadius: 10, borderColor: 'orange' }}>Website</Text>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
                 <View style={styles.feedback}>

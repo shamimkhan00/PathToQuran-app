@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Text, Animated, TouchableOpacity, Modal, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, Animated, TouchableOpacity, Modal, FlatList, ScrollView, Alert, ActivityIndicator, BackHandler } from 'react-native';
 import SoundPlayer from 'react-native-sound-player';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import verseCountsData from '../../assets/Quran/verseCountsData';
@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuran } from '../Components/Context';
 import { BannerAd, BannerAdSize, TestIds, } from 'react-native-google-mobile-ads';
 import RNFS from 'react-native-fs';
+import { useNavigation } from '@react-navigation/native';
 
 
 const Recitation = () => {
@@ -29,9 +30,7 @@ const Recitation = () => {
   const progress = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
   const [loading, setLoading] = useState(false);
-
-
-
+  const isPlayingRef = useRef(false);
 
   const {
     script,
@@ -39,7 +38,23 @@ const Recitation = () => {
     arabicFont,
   } = useQuran();
 
+  // const navigation = useNavigation(); //back
+  // useEffect(() => {
+  //   const backAction = () => {
+  //     navigation.goBack(); // Go back to Header
+  //     return true; // prevent default behavior (like closing app)
+  //   };
 
+  //   const backHandler = BackHandler.addEventListener(
+  //     'hardwareBackPress',
+  //     backAction
+  //   );
+
+  //   return () => backHandler.remove();
+  // }, []);
+
+
+  //finishedSubscription
   useEffect(() => {
     const finishedSubscription = SoundPlayer.addEventListener('FinishedPlaying', () => {
       if (hasStarted) {
@@ -52,13 +67,14 @@ const Recitation = () => {
     };
   }, [verse, hasStarted]);
 
+  //loadLastRecite
   useEffect(() => {
-    const loadLastRead = async () => {
+    const loadLastRecite = async () => {
       try {
-        const lastRead = await AsyncStorage.getItem('lastRead');
+        const LastRecite = await AsyncStorage.getItem('LastRecite');
 
-        if (lastRead) {
-          const { surah: savedSurah, verse: savedVerse } = JSON.parse(lastRead);
+        if (LastRecite) {
+          const { surah: savedSurah, verse: savedVerse } = JSON.parse(LastRecite);
           const surahNum = Math.max(1, Math.min(114, Number(savedSurah)));
           const verseLimit = verseCountsData[surahNum] || 1;
           const verseNum = Math.max(1, Math.min(verseLimit, Number(savedVerse)));
@@ -72,23 +88,23 @@ const Recitation = () => {
       }
     };
 
-    loadLastRead();
+    loadLastRecite();
   }, []);
 
   //store last read surah and verse 
   //use ref if any future error occurs
   useEffect(() => {
-    const saveLastRead = async () => {
+    const saveLastRecite = async () => {
       try {
         await AsyncStorage.setItem(
-          'lastRead',
+          'LastRecite',
           JSON.stringify({ surah, verse })
         );
       } catch (e) {
         console.warn('Failed to save last read:', e);
       }
     };
-    saveLastRead();
+    saveLastRecite();
   }, [surah, verse]);
 
 
@@ -117,44 +133,88 @@ const Recitation = () => {
 
 
   const playCurrentVerse = async () => {
+    if (isPlayingRef.current) {
+      console.log("Playback in progress, skipping redundant call.");
+      return;
+    }
+    isPlayingRef.current = true;
+
     try {
       setLoading(true);
+      SoundPlayer.stop();
 
       const fileName = `${surah}_${verse}.mp3`;
       const localPath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-      const exists = await RNFS.exists(localPath);
+
+      const existsPromise = RNFS.exists(localPath);
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("File check timeout")), 8000)
+      );
+
+      const exists = await Promise.race([existsPromise, timeoutPromise]);
 
       if (exists) {
         console.log(`Playing from cache: ${fileName}`);
         SoundPlayer.playUrl(`file://${localPath}`);
       } else {
         console.log(`Streaming from URL...`);
-        const url = `https://the-quran-project.github.io/Quran-Audio/Data/1/${surah}_${verse}.mp3`;
-        SoundPlayer.playUrl(url);
+
+        const downloadPromise = RNFS.downloadFile({ fromUrl: `https://the-quran-project.github.io/Quran-Audio/Data/1/${surah}_${verse}.mp3`, toFile: localPath }).promise;
+
+        const downloadTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Slow Internet")), 8000)
+        );
+
+        await Promise.race([downloadPromise, downloadTimeout]);
+
+        SoundPlayer.playUrl(`file://${localPath}`);
       }
 
-      // preloadNextVerse(surah, verse + 1);
       if (surah < 114 && verse >= getVerseCount(surah)) {
         preloadNextVerse(surah + 1, 1);
       } else {
         preloadNextVerse(surah, verse + 1);
       }
+
       setIsPlaying(true);
       await animateProgressBar();
+
     } catch (e) {
-      console.log('Playback error:', e);
-      Alert.alert("Error", "Failed to load audio.");
+      if (e instanceof Error) {
+        console.log('Playback error:', e.message);
+        Alert.alert("Error", e.message || "Failed to load audio.");
+      } else {
+        console.log('Playback error:', String(e));
+        Alert.alert("Error", "Failed to load audio.");
+      }
+
+      // Forcefully stop animation and playing state if stuck
+      animationRef.current?.stop();
+      progress.setValue(0);
+      setIsPlaying(false);
+      isPlayingRef.current = false;
     } finally {
       setLoading(false);
+      isPlayingRef.current = false;
     }
   };
 
 
   const animateProgressBar = async () => {
     progress.setValue(0);
+
     try {
       const info = await SoundPlayer.getInfo();
+
+      if (!info || !info.duration || info.duration <= 0) {
+        console.log('Invalid duration:', info);
+        return;
+      }
+
       setAudioDuration(info.duration);
+
+      animationRef.current?.stop();
 
       animationRef.current = Animated.timing(progress, {
         toValue: 1,
@@ -167,6 +227,7 @@ const Recitation = () => {
       console.log('Error getting audio info:', e);
     }
   };
+
 
 
   const handlePlayPause = async () => {
@@ -209,6 +270,12 @@ const Recitation = () => {
 
 
   const handleNext = async () => {
+
+    if (!isConnected) {
+      Alert.alert('No Internet Connection');
+      return;
+    }
+
     let nextSurah = surah;
     let nextVerse = verse + 1;
     const totalVerses = getVerseCount(surah);
@@ -232,6 +299,15 @@ const Recitation = () => {
 
 
   const handlePrevious = async () => {  // Make it async
+    if (!isConnected) {
+      Alert.alert('No Internet Connection');
+      return;
+    }
+    if (surah === 1 && verse === 1) {
+      setSurah(114);
+      setVerse(getVerseCount(114));
+      return; // Prevent going below Surah 1, Verse 1
+    }
     setLoading(true); // Show loading spinner immediately
 
     if (verse > 1) {
@@ -247,7 +323,7 @@ const Recitation = () => {
     if (hasStarted) {
       playCurrentVerse();
     }
-  }, [verse, hasStarted]);
+  }, [verse]);
 
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
@@ -371,11 +447,11 @@ const Recitation = () => {
           <View></View>
         </View>
 
-        {isConnected && (
+        {/* {isConnected && ( */}
           <View style={styles.bannerContainer}>
             <BannerAd
               key={adReloadKey}
-              unitId={TestIds.BANNER} // Replace with real unit ID in production
+              unitId="ca-app-pub-6964983812446877/3327150655" // Replace with real unit ID in production
               size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
               requestOptions={{
                 requestNonPersonalizedAdsOnly: true,
@@ -385,7 +461,7 @@ const Recitation = () => {
               }}
             />
           </View>
-        )}
+        {/* )} */}
 
 
         <View style={styles.buttonBar}>
@@ -404,7 +480,10 @@ const Recitation = () => {
                 <FontAwesome5 name="play" size={40} color={'white'} onPress={handlePlayPause} />
               )}
             </View>
-            <MaterialIcons name="skip-next" size={40} color={'white'} onPress={handleNext} />
+            <MaterialIcons name="skip-next" size={40} color={'white'} onPress={() => {
+              if (!loading) handleNext();
+            }}
+            />
           </View>
 
         </View>

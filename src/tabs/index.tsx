@@ -5,6 +5,7 @@ import SurahDetail from '../Components/SurahDetail';
 import React, { useEffect, useState } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import {
+  Animated,
   BackHandler,
   Dimensions,
   StyleSheet,
@@ -16,17 +17,44 @@ import {
   BannerAdSize,
   TestIds,
 } from 'react-native-google-mobile-ads';
-
+import { checkForUpdate, UpdateFlow } from 'react-native-in-app-updates';
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = () => {
+  useEffect(() => {
+    const checkUpdate = async () => {
+      try {
+        await checkForUpdate(UpdateFlow.FLEXIBLE);
+        // It will automatically show Google's update UI if needed
+      } catch (e) {
+        console.log('Update check error:', e);
+      }
+    };
+
+    checkUpdate();
+  }, []);
   // const fontsLoaded = useCachedFonts();
   const {
     selectSurah,
     setSelectedSurah,
     script,
     showTrans,
+    showAds,
+    setShowAds,
+    isSettingsVisible,
+    setIsSettingsVisible,
+    slideAnim,
   } = useQuran();
+
+  const closeSettings = () => {
+    Animated.timing(slideAnim, {
+      toValue: width,
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => {
+      setIsSettingsVisible(false);
+    });
+  };
 
   useEffect(() => {
     const onBackPress = () => {
@@ -82,21 +110,22 @@ const HomeScreen = () => {
           <MainContent onSurahPress={setSelectedSurah} />
         )}
       </View>
-      {isConnected && (
+      {/* {isConnected && showAds && ( */}
         <View style={styles.bannerContainer}>
           <BannerAd
             key={adReloadKey}
-            unitId={TestIds.BANNER} // Replace with real unit ID in production
+            unitId="ca-app-pub-6964983812446877/3327150655"
             size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
             requestOptions={{
               requestNonPersonalizedAdsOnly: true,
             }}
             onAdFailedToLoad={(error) => {
               console.warn('Ad failed to load:', error);
+              setShowAds(false);
             }}
           />
         </View>
-      )}
+      {/* )} */}
 
     </SafeAreaView>
 

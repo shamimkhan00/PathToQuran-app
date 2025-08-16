@@ -17,7 +17,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ViewToken } from 'react-native';
 import throttle from 'lodash.throttle';
 import mobileAds from 'react-native-google-mobile-ads';
-import NativeAdCard from '../Components/NativeAdCard.tsx';
 
 // import useCachedFonts from './useCachedFonts';
 const arabic = arabicJson as SurahMap;
@@ -235,11 +234,6 @@ export default function SurahDetail({
         )}
         
         removeClippedSubviews={true}
-        ListFooterComponent={() => (
-          <View style={styles.AdComp}>
-            <NativeAdCard />
-          </View>
-        )}
       />
 
 

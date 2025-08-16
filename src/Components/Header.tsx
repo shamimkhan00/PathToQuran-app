@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { useQuran } from './Context';
 import Settings from '../Components/Settings';
+import { useState } from 'react';
 const { width, height } = Dimensions.get('window');
 
 const Header = () => {
+    const [showSettings, setShowSettings] = useState(false);
 
     const {
         script,
@@ -57,6 +59,7 @@ const Header = () => {
                     { transform: [{ translateX: slideAnim }] },
                 ]}
             >
+                
                 <Settings script={script} setScript={setScript} showTrans={showTrans} setShowTrans={setShowTrans} closeSettings={closeSettings} />
             </Animated.View>
         </>
