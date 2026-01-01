@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     color: 'pink',
     padding: 10,
+    paddingRight: 15,
     fontFamily: 'fontUthmani',
     //UthmanicHafs
     borderBottomWidth: 0.2,

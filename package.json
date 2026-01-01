@@ -24,7 +24,7 @@
     "react-native-dotenv": "^3.4.11",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.27.1",
-    "react-native-google-mobile-ads": "^15.4.0",
+    "react-native-google-mobile-ads": "^15.8.3",
     "react-native-in-app-updates": "^0.2.2",
     "react-native-navigation-bar-color": "^2.0.2",
     "react-native-safe-area-context": "^5.5.1",

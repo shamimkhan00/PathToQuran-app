@@ -47,6 +47,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-6964983812446877~7978139272</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>EngMeri.ttf</string>

@@ -6,6 +6,7 @@ import { useQuran } from './Context';
 import { Linking } from 'react-native';
 import { BackHandler } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import PrivacyPolicy from '../Components/PrivacyPolicyScreen';
 
 const version = DeviceInfo.getVersion(); // e.g., "1.0.3"
 const buildNumber = DeviceInfo.getBuildNumber();
@@ -35,7 +36,7 @@ const Settings = ({ closeSettings }: SettingsProps) => {
         isSettingsVisible,
     } = useQuran();
     const [pressed, setPressed] = useState(false);
-
+    const [showPolicy, setShowPolicy] = useState(false);
 
 
     useEffect(() => {
@@ -66,7 +67,20 @@ const Settings = ({ closeSettings }: SettingsProps) => {
                     onPress={closeSettings}
                 />
             </View>
-            <View><Text style={{ color: '#777777ff' }}>Code : {buildNumber} Version : {version}</Text></View>
+            <View>
+                <Text style={{ color: '#777777ff' }}>Code : {buildNumber} Version : {version}</Text>
+                <TouchableOpacity onPress={() => setShowPolicy(true)}>
+                    <Text style={{ color: '#1e916c', marginTop: 6 }}>
+                        Privacy Policy
+                    </Text>
+                </TouchableOpacity>
+
+                <PrivacyPolicy
+                    visible={showPolicy}
+                    onClose={() => setShowPolicy(false)}
+                />
+            </View>
+
             <View style={styles.content}>
 
                 <View style={[styles.card]}>

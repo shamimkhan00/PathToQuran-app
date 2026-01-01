@@ -32,7 +32,7 @@ const AiVerseExplainer = () => {
   const [loading, setLoading] = useState(false);
   const { translationSource } = useQuran();
   const [adReloadKey, setAdReloadKey] = useState<number>(0);
-  
+
   // const navigation = useNavigation();
   // useEffect(() => {
   //   const backAction = () => {
@@ -51,6 +51,7 @@ const AiVerseExplainer = () => {
   useEffect(() => {
     mobileAds().initialize().then(() => {
       console.log('✅ AdMob SDK initialized');
+      console.log(GROQ_API_KEY)
     });
   }, []);
 
@@ -155,7 +156,7 @@ ${tafsir || 'No tafsir found for this range.'}
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-8b-8192',
+          model: 'llama-3.1-8b-instant',
           messages: [
             { role: 'system', content: getSystemPrompt() },
             { role: 'user', content: userPrompt },
@@ -226,21 +227,21 @@ ${tafsir || 'No tafsir found for this range.'}
         <Button title="Get Explanation" onPress={fetchExplanation} disabled={loading} />
 
         {!loading && result && <View style={styles.resultContainer}>{renderExplanation()}</View>}
-        
+
       </ScrollView>
       <View style={styles.bannerContainer}>
-                <BannerAd
-                  key={adReloadKey}
-                  unitId="ca-app-pub-6964983812446877/3327150655" // Replace with real unit ID in production
-                  size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-                  requestOptions={{
-                    requestNonPersonalizedAdsOnly: true,
-                  }}
-                  onAdFailedToLoad={(error) => {
-                    console.warn('Ad failed to load:', error);
-                  }}
-                />
-              </View>
+        <BannerAd
+          key={adReloadKey}
+          unitId="ca-app-pub-6964983812446877/3327150655" // Replace with real unit ID in production
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+          }}
+          onAdFailedToLoad={(error) => {
+            console.warn('Ad failed to load:', error);
+          }}
+        />
+      </View>
     </SafeAreaView>
   );
 };

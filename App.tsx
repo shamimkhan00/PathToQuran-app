@@ -7,10 +7,16 @@ import BottomTabs from './src/tabs/Navigation'
 import { useEffect } from 'react';
 import changeNavigationBarColor from 'react-native-navigation-bar-color';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import mobileAds from 'react-native-google-mobile-ads';
 
 export default function App() {
   useEffect(() => {
     changeNavigationBarColor('#043526', false); // color, light icons false = dark icons
+    mobileAds().initialize().then(() => {
+      console.log('AdMob initialized');
+    }).catch((error) => {
+      console.log('AdMob initialization error:', error);
+    });
   }, []);
 
   return (
